@@ -374,6 +374,7 @@ void setColorConversion709( GLfloat conversionMatrix[9] )
     if (currentCameraPosition == AVCaptureDevicePositionBack)
     {
         currentCameraPosition = AVCaptureDevicePositionFront;
+        _torch = NO;
     }
     else
     {
@@ -1057,6 +1058,68 @@ void setColorConversion709( GLfloat conversionMatrix[9] )
 {
     _horizontallyMirrorRearFacingCamera = newValue;
     [self updateOrientationSendToTargets];
+}
+
+#pragma mark --LFAdd
+- (void)removeVideoInputs
+{
+    [_captureSession beginConfiguration];
+    if (videoInput) {
+        [_captureSession removeInput:videoInput];
+        videoInput = nil;
+    }
+    [_captureSession commitConfiguration];
+}
+
+- (void)addVideoInputs
+{
+    [_captureSession beginConfiguration];
+    NSError *error = nil;
+    videoInput = [[AVCaptureDeviceInput alloc] initWithDevice:_inputCamera error:&error];
+    if ([_captureSession canAddInput:videoInput])
+    {
+        [_captureSession addInput:videoInput];
+    }
+    [_captureSession commitConfiguration];
+}
+
+
+- (void)setTorch:(BOOL)torch{
+    _torch = torch;
+    AVCaptureDevicePosition currentCameraPosition = [[videoInput device] position];
+    
+    if (currentCameraPosition != AVCaptureDevicePositionBack) return;
+    
+    
+    AVCaptureDevice *currentDevice = nil;
+    NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+    for (AVCaptureDevice *device in devices)
+    {
+        if ([device position] == AVCaptureDevicePositionBack)
+        {
+            currentDevice = device;
+        }
+    }
+    
+    BOOL lockAcquired = [currentDevice lockForConfiguration:nil];
+    if (lockAcquired)
+    {
+        // flip on the flash mode
+        if ([currentDevice hasTorch] && [currentDevice hasFlash])
+        {
+            if(_torch && [currentDevice isFlashModeSupported:AVCaptureFlashModeOn] && [currentDevice isFlashModeSupported:AVCaptureFlashModeOn])
+            {
+                [currentDevice setTorchMode:AVCaptureTorchModeOn];
+                [currentDevice setFlashMode:AVCaptureFlashModeOn];
+            }
+            else if(!_torch && [currentDevice isFlashModeSupported:AVCaptureFlashModeOff] && [currentDevice isFlashModeSupported:AVCaptureFlashModeOff])
+            {
+                [currentDevice setTorchMode:AVCaptureTorchModeOff];
+                [currentDevice setFlashMode:AVCaptureFlashModeOff];
+            }
+        }
+        [currentDevice unlockForConfiguration];
+    }
 }
 
 @end

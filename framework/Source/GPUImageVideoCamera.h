@@ -153,4 +153,9 @@ void setColorConversion709( GLfloat conversionMatrix[9] );
 + (BOOL)isBackFacingCameraPresent;
 + (BOOL)isFrontFacingCameraPresent;
 
+#pragma mark -- LFAdd
+@property(nonatomic, assign ,getter=isTorch) BOOL torch;
+- (void)removeVideoInputs;
+- (void)addVideoInputs;
+
 @end
